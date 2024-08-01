@@ -10,7 +10,8 @@ class Data(db.Model):
     name = db.Column(db.String(50), nullable=False)
     value = db.Column(db.String(50), nullable=False)
 
-db.create_all()
+with app.app_context():
+    db.create_all()
 
 @app.route('/test', methods=['GET'])
 def get_sample():
