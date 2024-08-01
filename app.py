@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from functools import wraps
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+app.config['API_KEY'] = 'gdsc_backend'
 db = SQLAlchemy(app)
 
 class Data(db.Model):
@@ -12,6 +14,16 @@ class Data(db.Model):
 
 with app.app_context():
     db.create_all()
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('x-api-key')
+        if api_key and api_key == app.config['API_KEY']:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"message": "Forbidden"}), 403
+    return decorated_function
 
 @app.route('/test', methods=['GET'])
 def get_sample():
@@ -33,6 +45,7 @@ def post_data():
         return jsonify({"message": "Invalid format/content-type."}), 400
 
 @app.route('/data', methods=['GET'])
+@require_api_key
 def get_data():
     data = Data.query.all()
     result = [
